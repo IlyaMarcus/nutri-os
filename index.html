@@ -1,4 +1,4 @@
-<!-- NutriOS | Version: 0.5 | Updated: 2026-03-24 -->
+<!-- NutriOS | Version: 0.6 | Updated: 2026-03-24 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -633,6 +633,7 @@ let UI = {
   pendingEntry:    null,
   loading:         false,
   loadingMsg:      'Analyzing…',
+  error:           null,
   voiceActive:     false,
   voiceTranscript: '',
   photoBase64:     null,
@@ -761,20 +762,26 @@ async function nutri_call(messages) {
 async function nutri_runAnalysis(apiFn, inputType, rawInput) {
   UI.loading    = true;
   UI.loadingMsg = 'Analyzing with Claude…';
+  UI.error      = null;
   render();
+  let errorMsg = null;
   try {
-    const result       = await apiFn();
-    result.input_type  = inputType;
-    result.raw_input   = rawInput;
-    UI.pendingEntry    = result;
-    UI.modal           = 'confirm';
+    const result      = await apiFn();
+    result.input_type = inputType;
+    result.raw_input  = rawInput;
+    UI.pendingEntry   = result;
+    UI.modal          = 'confirm';
   } catch(err) {
     console.error('NutriOS:', err);
-    showToast('Error: ' + (err.message || 'API call failed'));
-    UI.modal = 'add';
+    // Store error so it renders inside the modal, not as a toast that render() would destroy
+    errorMsg   = err.message || 'API call failed';
+    UI.modal   = 'add';
+    UI.error   = errorMsg;
   } finally {
     UI.loading = false;
     render();
+    // Toast fires after render() so it won't be wiped
+    if (errorMsg) showToast('Error: ' + errorMsg);
   }
 }
 
@@ -937,6 +944,7 @@ function rAddModal() {
     <div class="modal-sheet" id="modal-sheet">
       <div class="modal-handle"></div>
       <div class="modal-title">Log Food</div>
+      ${UI.error ? `<div style="background:rgba(255,80,80,0.12);border:1px solid rgba(255,80,80,0.3);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:13px;color:#ff6b6b;font-family:'DM Mono',monospace">${UI.error}</div>` : ''}
       <div class="add-modes">
         ${rModeBtn('voice',  '🎤', 'Voice')}
         ${rModeBtn('text',   '✏️',  'Type')}
@@ -1094,16 +1102,17 @@ function bindMain() {
 
     if (a === 'nav-home')    { UI.screen = 'home'; UI.modal = null; render(); }
     if (a === 'nav-log')     { UI.screen = 'log';  UI.modal = null; render(); }
-    if (a === 'open-add')    { UI.modal = 'add'; UI.addMode = null; UI.voiceTranscript = ''; UI.photoBase64 = null; render(); }
+    if (a === 'open-add')    { UI.modal = 'add'; UI.addMode = null; UI.voiceTranscript = ''; UI.photoBase64 = null; UI.error = null; render(); }
     if (a === 'close-modal') {
       // Only close if tap was directly on overlay, not the sheet
       if (e.target === el) { UI.modal = null; UI.addMode = null; nutri_stopVoice(); render(); }
     }
 
     if (a === 'set-mode') {
-      UI.addMode = el.dataset.mode;
+      UI.addMode         = el.dataset.mode;
       UI.voiceTranscript = '';
       UI.photoBase64     = null;
+      UI.error           = null;
       render();
     }
 
