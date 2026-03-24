@@ -1,0 +1,1162 @@
+<!-- NutriOS | Version: 0.1 | Updated: 2026-03-24 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>NutriOS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --black:    #0a0a0a;
+      --gray-900: #111111;
+      --gray-800: #1a1a1a;
+      --gray-700: #272727;
+      --gray-600: #333333;
+      --gray-500: #555555;
+      --gray-400: #888888;
+      --gray-200: #cccccc;
+      --white:    #f0f0f0;
+      --cal:      #ff6b35;
+      --protein:  #4fc3f7;
+      --carbs:    #ffb74d;
+      --fat:      #ce93d8;
+      --fiber:    #81c784;
+      --accent:   #ff6b35;
+      --radius:   14px;
+      --radius-sm: 8px;
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+    html, body {
+      background: var(--black);
+      color: var(--white);
+      font-family: 'DM Sans', sans-serif;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    #app {
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ── Scrollable area ── */
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 0 16px 100px;
+    }
+
+    /* ── Header ── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 56px 20px 16px;
+      background: var(--black);
+      border-bottom: 1px solid var(--gray-800);
+      flex-shrink: 0;
+    }
+    .header-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      letter-spacing: 2px;
+    }
+    .header-date {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: var(--gray-400);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 2px;
+    }
+    .header-settings {
+      background: none;
+      border: none;
+      color: var(--gray-400);
+      font-size: 20px;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    /* ── Bottom nav ── */
+    .bottom-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 12px 24px 28px;
+      background: var(--gray-900);
+      border-top: 1px solid var(--gray-800);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      background: none;
+      border: none;
+      color: var(--gray-500);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 10px;
+      cursor: pointer;
+      padding: 4px 20px;
+      transition: color 0.15s;
+    }
+    .nav-btn.active { color: var(--white); }
+    .nav-btn svg { width: 22px; height: 22px; }
+    .nav-add-btn {
+      width: 54px;
+      height: 54px;
+      background: var(--accent);
+      border: none;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      margin-top: -24px;
+      box-shadow: 0 4px 20px rgba(255,107,53,0.4);
+      flex-shrink: 0;
+      transition: transform 0.15s;
+    }
+    .nav-add-btn:active { transform: scale(0.92); }
+    .nav-add-btn svg { width: 26px; height: 26px; color: #fff; }
+
+    /* ── Macro card ── */
+    .macro-card {
+      background: var(--gray-900);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin: 16px 0 12px;
+      border: 1px solid var(--gray-800);
+    }
+    .cal-display { text-align: center; margin-bottom: 20px; }
+    .cal-number {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 72px;
+      line-height: 1;
+      color: var(--cal);
+      letter-spacing: 2px;
+    }
+    .cal-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: var(--gray-400);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-top: 2px;
+    }
+    .macros-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .macro-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .macro-value {
+      font-family: 'DM Mono', monospace;
+      font-size: 17px;
+      font-weight: 500;
+    }
+    .macro-unit { font-size: 11px; color: var(--gray-400); }
+    .macro-label {
+      font-size: 10px;
+      color: var(--gray-400);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* ── Section label ── */
+    .section-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--gray-400);
+      margin: 20px 0 10px;
+    }
+
+    /* ── Entry card ── */
+    .entry-card {
+      background: var(--gray-900);
+      border: 1px solid var(--gray-800);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 8px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .entry-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: var(--gray-800);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+    .entry-body { flex: 1; min-width: 0; }
+    .entry-foods { font-size: 14px; color: var(--white); line-height: 1.4; margin-bottom: 6px; }
+    .entry-macros {
+      display: flex;
+      gap: 8px;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: var(--gray-500);
+      flex-wrap: wrap;
+    }
+    .entry-meta {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .entry-time {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: var(--gray-500);
+    }
+    .entry-delete {
+      background: none;
+      border: none;
+      color: var(--gray-600);
+      cursor: pointer;
+      font-size: 20px;
+      line-height: 1;
+      padding: 0;
+    }
+
+    /* ── Empty state ── */
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--gray-500);
+    }
+    .empty-icon { font-size: 40px; margin-bottom: 12px; }
+    .empty-text { font-size: 14px; line-height: 1.7; }
+
+    /* ── Modal / bottom sheet ── */
+    .modal-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.72);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+    }
+    .modal-sheet {
+      background: var(--gray-900);
+      border-radius: 20px 20px 0 0;
+      border-top: 1px solid var(--gray-700);
+      padding: 12px 20px 40px;
+      max-height: 92dvh;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      animation: slideUp 0.22s ease;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0); }
+    }
+    .modal-handle {
+      width: 36px;
+      height: 4px;
+      background: var(--gray-600);
+      border-radius: 2px;
+      margin: 0 auto 20px;
+    }
+    .modal-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 26px;
+      letter-spacing: 1px;
+      margin-bottom: 20px;
+    }
+
+    /* ── Mode buttons ── */
+    .add-modes {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    .mode-btn {
+      background: var(--gray-800);
+      border: 1.5px solid var(--gray-700);
+      border-radius: var(--radius);
+      padding: 18px 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      color: var(--white);
+    }
+    .mode-btn.active {
+      border-color: var(--accent);
+      background: rgba(255,107,53,0.08);
+    }
+    .mode-btn-icon { font-size: 26px; }
+    .mode-btn-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--gray-400);
+    }
+    .mode-btn.active .mode-btn-label { color: var(--accent); }
+
+    /* ── Text input ── */
+    .food-textarea {
+      background: var(--gray-800);
+      border: 1.5px solid var(--gray-700);
+      border-radius: var(--radius-sm);
+      color: var(--white);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      padding: 14px;
+      width: 100%;
+      min-height: 88px;
+      resize: none;
+      outline: none;
+      transition: border-color 0.15s;
+      margin-bottom: 10px;
+    }
+    .food-textarea:focus { border-color: var(--gray-500); }
+    .food-textarea::placeholder { color: var(--gray-500); }
+
+    /* ── Voice ── */
+    .voice-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      padding: 16px 0;
+    }
+    .voice-btn {
+      width: 76px;
+      height: 76px;
+      border-radius: 50%;
+      background: var(--gray-800);
+      border: 2px solid var(--gray-600);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 30px;
+      transition: all 0.2s;
+    }
+    .voice-btn.recording {
+      background: rgba(255,107,53,0.15);
+      border-color: var(--accent);
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%,100% { box-shadow: 0 0 0 0 rgba(255,107,53,0.4); }
+      50%      { box-shadow: 0 0 0 14px rgba(255,107,53,0); }
+    }
+    .voice-status {
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      color: var(--gray-400);
+      min-height: 18px;
+    }
+    .voice-transcript {
+      background: var(--gray-800);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      font-size: 14px;
+      color: var(--gray-200);
+      font-style: italic;
+      width: 100%;
+    }
+
+    /* ── Camera ── */
+    .camera-area { display: flex; flex-direction: column; gap: 10px; }
+    .camera-placeholder {
+      background: var(--gray-800);
+      border: 1.5px dashed var(--gray-600);
+      border-radius: var(--radius);
+      height: 150px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      color: var(--gray-400);
+      font-size: 13px;
+    }
+    .camera-placeholder.hidden { display: none; }
+    .camera-placeholder-icon { font-size: 34px; }
+    .photo-preview {
+      width: 100%;
+      border-radius: var(--radius);
+      max-height: 220px;
+      object-fit: cover;
+      border: 1px solid var(--gray-700);
+      display: none;
+    }
+    .photo-preview.visible { display: block; }
+
+    /* ── Buttons ── */
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+      width: 100%;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn-primary:active  { opacity: 0.85; transform: scale(0.98); }
+    .btn-primary:disabled { opacity: 0.4; }
+    .btn-secondary {
+      background: var(--gray-800);
+      color: var(--gray-200);
+      border: 1.5px solid var(--gray-700);
+      border-radius: var(--radius-sm);
+      padding: 13px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 500;
+      font-size: 15px;
+      cursor: pointer;
+      width: 100%;
+    }
+    .btn-row { display: grid; grid-template-columns: 1fr 2fr; gap: 8px; }
+    .mt-10 { margin-top: 10px; }
+
+    /* ── Confirm modal ── */
+    .confirm-items { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+    .confirm-item {
+      background: var(--gray-800);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .confirm-item-name { font-size: 14px; flex: 1; }
+    .confirm-item-right {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: var(--gray-400);
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .confirm-totals {
+      background: var(--gray-800);
+      border: 1px solid var(--gray-700);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    .ct-val {
+      font-family: 'DM Mono', monospace;
+      font-size: 15px;
+      font-weight: 500;
+    }
+    .ct-label {
+      font-size: 10px;
+      color: var(--gray-400);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 2px;
+    }
+
+    /* ── Loading overlay ── */
+    .loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(10,10,10,0.88);
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--gray-700);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text {
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      color: var(--gray-400);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    /* ── Setup screen ── */
+    .setup-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      padding: 40px 24px;
+      text-align: center;
+    }
+    .setup-logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 56px;
+      letter-spacing: 5px;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+    .setup-tagline {
+      font-size: 14px;
+      color: var(--gray-400);
+      line-height: 1.6;
+      margin-bottom: 40px;
+    }
+    .setup-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--gray-400);
+      text-align: left;
+      width: 100%;
+      margin-bottom: 8px;
+    }
+    .setup-input {
+      background: var(--gray-800);
+      border: 1.5px solid var(--gray-700);
+      border-radius: var(--radius-sm);
+      color: var(--white);
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      padding: 14px;
+      width: 100%;
+      outline: none;
+      margin-bottom: 14px;
+    }
+    .setup-input:focus { border-color: var(--accent); }
+    .setup-note {
+      font-size: 12px;
+      color: var(--gray-500);
+      line-height: 1.6;
+      margin-top: 14px;
+    }
+
+    /* ── Toast ── */
+    .toast {
+      position: absolute;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--gray-700);
+      color: var(--white);
+      font-size: 13px;
+      padding: 10px 18px;
+      border-radius: 20px;
+      white-space: nowrap;
+      z-index: 300;
+      pointer-events: none;
+      animation: fadeInOut 2.6s ease forwards;
+    }
+    @keyframes fadeInOut {
+      0%   { opacity:0; transform: translateX(-50%) translateY(8px); }
+      12%  { opacity:1; transform: translateX(-50%) translateY(0); }
+      78%  { opacity:1; }
+      100% { opacity:0; }
+    }
+  </style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ─────────────────────────────────────────
+// NutriOS · Constants
+// ─────────────────────────────────────────
+const STORE_KEY = 'nutri_os_v1';
+const MODEL     = 'claude-opus-4-5';
+const API_URL   = 'https://api.anthropic.com/v1/messages';
+
+// ─────────────────────────────────────────
+// NutriOS · State
+// ─────────────────────────────────────────
+
+// Persisted to localStorage
+let S = {
+  apiKey: '',
+  log: []
+  // log[] = { date, entries[], day_totals{calories,protein,carbs,fat,fiber} }
+  // entry  = { id, time, input_type, raw_input, items[], totals{} }
+  // item   = { name, grams, calories, protein, carbs, fat, fiber }
+};
+
+// Runtime UI state — never persisted
+let UI = {
+  screen:          'home',   // 'home' | 'log'
+  modal:           null,     // null | 'add' | 'confirm'
+  addMode:         null,     // null | 'voice' | 'text' | 'camera'
+  pendingEntry:    null,
+  loading:         false,
+  loadingMsg:      'Analyzing…',
+  voiceActive:     false,
+  voiceTranscript: '',
+  photoBase64:     null,
+  photoMime:       null,
+  recognition:     null
+};
+
+// ─────────────────────────────────────────
+// Persistence
+// ─────────────────────────────────────────
+function save() {
+  localStorage.setItem(STORE_KEY, JSON.stringify(S));
+}
+function load() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) S = { ...S, ...JSON.parse(raw) };
+  } catch(e) { console.warn('NutriOS: load failed', e); }
+}
+
+// ─────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────
+function today() {
+  return new Date().toISOString().slice(0, 10);
+}
+function fmtDate(d) {
+  return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
+}
+function fmtTime() {
+  return new Date().toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', hour12:false });
+}
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+}
+
+// ─────────────────────────────────────────
+// Data — all functions prefixed nutri_
+// ─────────────────────────────────────────
+function nutri_getDay(date) {
+  return S.log.find(d => d.date === date) || null;
+}
+function nutri_getOrCreateDay(date) {
+  let day = S.log.find(d => d.date === date);
+  if (!day) {
+    day = { date, entries:[], day_totals:{ calories:0, protein:0, carbs:0, fat:0, fiber:0 } };
+    S.log.unshift(day);
+  }
+  return day;
+}
+function nutri_recalc(day) {
+  const t = { calories:0, protein:0, carbs:0, fat:0, fiber:0 };
+  for (const e of day.entries) {
+    t.calories += e.totals.calories;
+    t.protein  += e.totals.protein;
+    t.carbs    += e.totals.carbs;
+    t.fat      += e.totals.fat;
+    t.fiber    += e.totals.fiber;
+  }
+  day.day_totals = t;
+}
+function nutri_addEntry(entry) {
+  const day = nutri_getOrCreateDay(today());
+  day.entries.push(entry);
+  nutri_recalc(day);
+  save();
+}
+function nutri_deleteEntry(date, id) {
+  const day = S.log.find(d => d.date === date);
+  if (!day) return;
+  day.entries = day.entries.filter(e => e.id !== id);
+  nutri_recalc(day);
+  save();
+}
+
+// ─────────────────────────────────────────
+// Claude API
+// ─────────────────────────────────────────
+const SCHEMA_PROMPT = `Return ONLY raw JSON — no markdown fences, no explanation:
+{
+  "items": [{ "name":"Food with portion", "grams":100, "calories":0, "protein":0, "carbs":0, "fat":0, "fiber":0 }],
+  "totals": { "calories":0, "protein":0, "carbs":0, "fat":0, "fiber":0 }
+}
+All numbers are integers. grams = weight of that food item.`;
+
+async function nutri_analyzeText(text) {
+  const prompt = `You are a precise nutrition expert. The user logged: "${text}"\nIdentify each food, assume a standard portion if unspecified, return accurate nutritional values.\n${SCHEMA_PROMPT}`;
+  return nutri_call([{ role:'user', content: prompt }]);
+}
+
+async function nutri_analyzeImage(b64, mime) {
+  const prompt = `You are a nutrition expert skilled at estimating food portions from photos.\n1. Identify every food visible.\n2. Estimate weight in grams for each (use plate size, typical portions).\n3. Calculate nutritional values.\n${SCHEMA_PROMPT}`;
+  return nutri_call([{
+    role: 'user',
+    content: [
+      { type:'image', source:{ type:'base64', media_type: mime, data: b64 } },
+      { type:'text', text: prompt }
+    ]
+  }]);
+}
+
+async function nutri_call(messages) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type':  'application/json',
+      'x-api-key':     S.apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-allow-browser': 'true'
+    },
+    body: JSON.stringify({ model: MODEL, max_tokens: 1024, messages })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(()=>({}));
+    throw new Error(err.error?.message || `API error ${res.status}`);
+  }
+  const data = await res.json();
+  const raw  = data.content[0].text.trim()
+    .replace(/^```(?:json)?\n?/,'').replace(/\n?```$/,'');
+  return JSON.parse(raw);
+}
+
+// ─────────────────────────────────────────
+// Analysis flow
+// ─────────────────────────────────────────
+async function nutri_runAnalysis(apiFn, inputType, rawInput) {
+  UI.loading    = true;
+  UI.loadingMsg = 'Analyzing with Claude…';
+  render();
+  try {
+    const result       = await apiFn();
+    result.input_type  = inputType;
+    result.raw_input   = rawInput;
+    UI.pendingEntry    = result;
+    UI.modal           = 'confirm';
+  } catch(err) {
+    console.error('NutriOS:', err);
+    showToast('Error: ' + (err.message || 'API call failed'));
+    UI.modal = 'add';
+  } finally {
+    UI.loading = false;
+    render();
+  }
+}
+
+// ─────────────────────────────────────────
+// Voice
+// ─────────────────────────────────────────
+function nutri_toggleVoice() {
+  UI.voiceActive ? nutri_stopVoice() : nutri_startVoice();
+}
+function nutri_startVoice() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { showToast('Voice not supported in this browser'); return; }
+  const r = new SR();
+  r.lang = 'en-US'; r.interimResults = false; r.maxAlternatives = 1;
+  r.onstart  = () => { UI.voiceActive = true;  UI.recognition = r; render(); };
+  r.onresult = e  => { UI.voiceTranscript = e.results[0][0].transcript; UI.voiceActive = false; UI.recognition = null; render(); };
+  r.onerror  = e  => { UI.voiceActive = false; UI.recognition = null; showToast('Voice error: ' + e.error); render(); };
+  r.onend    = ()  => { UI.voiceActive = false; UI.recognition = null; render(); };
+  r.start();
+}
+function nutri_stopVoice() {
+  if (UI.recognition) { UI.recognition.stop(); UI.recognition = null; }
+  UI.voiceActive = false;
+}
+
+// ─────────────────────────────────────────
+// Render
+// ─────────────────────────────────────────
+function render() {
+  const app = document.getElementById('app');
+  if (!S.apiKey) {
+    app.innerHTML = rSetup();
+    bindSetup();
+    return;
+  }
+  app.innerHTML = `
+    ${rHeader()}
+    <div class="content">${UI.screen === 'home' ? rHome() : rHistory()}</div>
+    ${rNav()}
+    ${UI.modal === 'add'     ? rAddModal()     : ''}
+    ${UI.modal === 'confirm' ? rConfirmModal() : ''}
+    ${UI.loading             ? rLoading()      : ''}
+  `;
+  bindMain();
+}
+
+// ── Header
+function rHeader() {
+  return `<div class="header">
+    <div>
+      <div class="header-title">NutriOS</div>
+      <div class="header-date">${fmtDate(today())}</div>
+    </div>
+    <button class="header-settings" data-action="open-settings">⚙</button>
+  </div>`;
+}
+
+// ── Bottom nav
+function rNav() {
+  return `<div class="bottom-nav">
+    <button class="nav-btn ${UI.screen==='home'?'active':''}" data-action="nav-home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>Today
+    </button>
+    <button class="nav-add-btn" data-action="open-add">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+    </button>
+    <button class="nav-btn ${UI.screen==='log'?'active':''}" data-action="nav-log">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+        <line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/>
+        <line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+      </svg>History
+    </button>
+  </div>`;
+}
+
+// ── Home screen
+function rHome() {
+  const day     = nutri_getDay(today());
+  const totals  = day ? day.day_totals : { calories:0, protein:0, carbs:0, fat:0, fiber:0 };
+  const entries = day ? [...day.entries].reverse() : [];
+  return `
+    ${rMacroCard(totals)}
+    <div class="section-label">Today's Log</div>
+    ${entries.length === 0
+      ? `<div class="empty-state"><div class="empty-icon">🍽️</div><div class="empty-text">Nothing logged yet.<br>Tap + to add your first meal.</div></div>`
+      : entries.map(e => rEntryCard(e, today())).join('')}
+  `;
+}
+
+// ── Macro summary card
+function rMacroCard(t) {
+  return `<div class="macro-card">
+    <div class="cal-display">
+      <div class="cal-number">${t.calories.toLocaleString()}</div>
+      <div class="cal-label">kcal today</div>
+    </div>
+    <div class="macros-row">
+      ${rMacroItem('Protein', t.protein, 'g', 'var(--protein)')}
+      ${rMacroItem('Carbs',   t.carbs,   'g', 'var(--carbs)')}
+      ${rMacroItem('Fat',     t.fat,     'g', 'var(--fat)')}
+      ${rMacroItem('Fiber',   t.fiber,   'g', 'var(--fiber)')}
+    </div>
+  </div>`;
+}
+function rMacroItem(label, val, unit, color) {
+  return `<div class="macro-item">
+    <div class="macro-value" style="color:${color}">${val}<span class="macro-unit">${unit}</span></div>
+    <div class="macro-label">${label}</div>
+  </div>`;
+}
+
+// ── Entry card
+function rEntryCard(e, date) {
+  const icons = { voice:'🎤', text:'✏️', camera:'📷' };
+  return `<div class="entry-card">
+    <div class="entry-icon">${icons[e.input_type]||'🍽️'}</div>
+    <div class="entry-body">
+      <div class="entry-foods">${e.items.map(i=>i.name).join(', ')}</div>
+      <div class="entry-macros">
+        <span style="color:var(--cal)">${e.totals.calories} kcal</span>
+        &nbsp;·&nbsp;<span style="color:var(--protein)">${e.totals.protein}g P</span>
+        &nbsp;·&nbsp;<span style="color:var(--carbs)">${e.totals.carbs}g C</span>
+        &nbsp;·&nbsp;<span style="color:var(--fat)">${e.totals.fat}g F</span>
+      </div>
+    </div>
+    <div class="entry-meta">
+      <div class="entry-time">${e.time}</div>
+      <button class="entry-delete" data-action="delete-entry" data-date="${date}" data-id="${e.id}">×</button>
+    </div>
+  </div>`;
+}
+
+// ── History screen
+function rHistory() {
+  const days = S.log.filter(d => d.entries.length > 0);
+  if (!days.length) return `<div class="empty-state" style="padding-top:60px"><div class="empty-icon">📋</div><div class="empty-text">No history yet.</div></div>`;
+  return days.map(day => `
+    <div class="section-label" style="margin-top:20px">${fmtDate(day.date)}</div>
+    <div class="macro-card" style="padding:12px 16px;margin:0 0 8px">
+      <div class="macros-row" style="grid-template-columns:repeat(5,1fr)">
+        ${rMacroItem('Cal',   day.day_totals.calories, '',  'var(--cal)')}
+        ${rMacroItem('Prot',  day.day_totals.protein,  'g', 'var(--protein)')}
+        ${rMacroItem('Carbs', day.day_totals.carbs,    'g', 'var(--carbs)')}
+        ${rMacroItem('Fat',   day.day_totals.fat,      'g', 'var(--fat)')}
+        ${rMacroItem('Fiber', day.day_totals.fiber,    'g', 'var(--fiber)')}
+      </div>
+    </div>
+    ${day.entries.map(e => rEntryCard(e, day.date)).join('')}
+  `).join('');
+}
+
+// ── Add modal
+function rAddModal() {
+  return `<div class="modal-overlay" data-action="close-modal">
+    <div class="modal-sheet" id="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title">Log Food</div>
+      <div class="add-modes">
+        ${rModeBtn('voice',  '🎤', 'Voice')}
+        ${rModeBtn('text',   '✏️',  'Type')}
+        ${rModeBtn('camera', '📷', 'Camera')}
+      </div>
+      ${UI.addMode === 'text'   ? rTextInput()   : ''}
+      ${UI.addMode === 'voice'  ? rVoiceInput()  : ''}
+      ${UI.addMode === 'camera' ? rCameraInput() : ''}
+    </div>
+  </div>`;
+}
+function rModeBtn(mode, icon, label) {
+  return `<button class="mode-btn ${UI.addMode===mode?'active':''}" data-action="set-mode" data-mode="${mode}">
+    <div class="mode-btn-icon">${icon}</div>
+    <div class="mode-btn-label">${label}</div>
+  </button>`;
+}
+function rTextInput() {
+  return `<textarea class="food-textarea" id="food-text" placeholder="e.g. 2 scrambled eggs, 1 slice sourdough, black coffee…"></textarea>
+  <button class="btn-primary" data-action="analyze-text">Analyze →</button>`;
+}
+function rVoiceInput() {
+  const active = UI.voiceActive;
+  const status = active ? 'Listening…' : (UI.voiceTranscript ? 'Tap to re-record' : 'Tap mic to start');
+  return `<div class="voice-area">
+    <button class="voice-btn ${active?'recording':''}" data-action="toggle-voice">🎤</button>
+    <div class="voice-status">${status}</div>
+    ${UI.voiceTranscript
+      ? `<div class="voice-transcript">"${UI.voiceTranscript}"</div>
+         <button class="btn-primary mt-10" data-action="analyze-voice">Analyze →</button>`
+      : ''}
+  </div>`;
+}
+function rCameraInput() {
+  return `<div class="camera-area">
+    <div class="camera-placeholder ${UI.photoBase64?'hidden':''}" data-action="trigger-camera">
+      <div class="camera-placeholder-icon">📷</div>
+      <div>Tap to take or upload a photo</div>
+    </div>
+    ${UI.photoBase64
+      ? `<img class="photo-preview visible" src="data:${UI.photoMime};base64,${UI.photoBase64}">`
+      : ''}
+    <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none">
+    ${UI.photoBase64
+      ? `<button class="btn-secondary" data-action="trigger-camera">Change Photo</button>
+         <button class="btn-primary mt-10" data-action="analyze-camera">Analyze Photo →</button>`
+      : ''}
+  </div>`;
+}
+
+// ── Confirm modal
+function rConfirmModal() {
+  const p = UI.pendingEntry;
+  if (!p) return '';
+  return `<div class="modal-overlay">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title">Confirm Entry</div>
+      <div class="confirm-items">
+        ${p.items.map(i => `<div class="confirm-item">
+          <div class="confirm-item-name">${i.name}</div>
+          <div class="confirm-item-right">${i.grams}g<br>${i.calories} kcal</div>
+        </div>`).join('')}
+      </div>
+      <div class="confirm-totals">
+        <div><div class="ct-val" style="color:var(--cal)">${p.totals.calories}</div><div class="ct-label">kcal</div></div>
+        <div><div class="ct-val" style="color:var(--protein)">${p.totals.protein}g</div><div class="ct-label">Protein</div></div>
+        <div><div class="ct-val" style="color:var(--carbs)">${p.totals.carbs}g</div><div class="ct-label">Carbs</div></div>
+        <div><div class="ct-val" style="color:var(--fat)">${p.totals.fat}g</div><div class="ct-label">Fat</div></div>
+        <div><div class="ct-val" style="color:var(--fiber)">${p.totals.fiber}g</div><div class="ct-label">Fiber</div></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn-secondary" data-action="cancel-confirm">Discard</button>
+        <button class="btn-primary"   data-action="save-entry">Save Entry ✓</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── Loading overlay
+function rLoading() {
+  return `<div class="loading-overlay">
+    <div class="spinner"></div>
+    <div class="loading-text">${UI.loadingMsg}</div>
+  </div>`;
+}
+
+// ── Setup screen
+function rSetup() {
+  return `<div class="setup-screen">
+    <div class="setup-logo">NutriOS</div>
+    <div class="setup-tagline">Log meals by voice, text, or photo.<br>Powered by Claude AI.</div>
+    <div class="setup-label">Anthropic API Key</div>
+    <input class="setup-input" id="api-key-input" type="password" placeholder="sk-ant-…" autocomplete="off" spellcheck="false">
+    <button class="btn-primary" id="save-key-btn">Get Started →</button>
+    <div class="setup-note">Stored locally on this device only.<br>Sent only to Anthropic's API — never anywhere else.</div>
+  </div>`;
+}
+
+// ─────────────────────────────────────────
+// Event binding
+// ─────────────────────────────────────────
+function bindSetup() {
+  const btn   = document.getElementById('save-key-btn');
+  const input = document.getElementById('api-key-input');
+  btn.addEventListener('click', () => {
+    const key = input.value.trim();
+    if (!key.startsWith('sk-')) { showToast('Paste a valid Anthropic API key'); return; }
+    S.apiKey = key;
+    save();
+    render();
+  });
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') btn.click(); });
+}
+
+function bindMain() {
+  document.getElementById('app').addEventListener('click', async e => {
+    const el = e.target.closest('[data-action]');
+    if (!el) return;
+
+    // Prevent sheet tap from bubbling to overlay close
+    if (el.id === 'modal-sheet' || el.closest('#modal-sheet')) {
+      if (el.dataset.action === 'close-modal') return;
+    }
+
+    const a = el.dataset.action;
+
+    if (a === 'nav-home')    { UI.screen = 'home'; UI.modal = null; render(); }
+    if (a === 'nav-log')     { UI.screen = 'log';  UI.modal = null; render(); }
+    if (a === 'open-add')    { UI.modal = 'add'; UI.addMode = null; UI.voiceTranscript = ''; UI.photoBase64 = null; render(); }
+    if (a === 'close-modal') {
+      // Only close if tap was directly on overlay, not the sheet
+      if (e.target === el) { UI.modal = null; UI.addMode = null; nutri_stopVoice(); render(); }
+    }
+
+    if (a === 'set-mode') {
+      UI.addMode = el.dataset.mode;
+      UI.voiceTranscript = '';
+      UI.photoBase64     = null;
+      render();
+    }
+
+    if (a === 'analyze-text') {
+      const text = document.getElementById('food-text')?.value.trim();
+      if (!text) { showToast('Type what you ate first'); return; }
+      await nutri_runAnalysis(() => nutri_analyzeText(text), 'text', text);
+    }
+
+    if (a === 'toggle-voice') { nutri_toggleVoice(); }
+
+    if (a === 'analyze-voice') {
+      const t = UI.voiceTranscript.trim();
+      if (!t) { showToast('Nothing recorded yet'); return; }
+      await nutri_runAnalysis(() => nutri_analyzeText(t), 'voice', t);
+    }
+
+    if (a === 'trigger-camera') { document.getElementById('camera-input')?.click(); }
+
+    if (a === 'analyze-camera') {
+      if (!UI.photoBase64) { showToast('Select a photo first'); return; }
+      await nutri_runAnalysis(() => nutri_analyzeImage(UI.photoBase64, UI.photoMime), 'camera', '');
+    }
+
+    if (a === 'save-entry') {
+      const p = UI.pendingEntry;
+      if (!p) return;
+      nutri_addEntry({ id: uid(), time: fmtTime(), input_type: p.input_type, raw_input: p.raw_input, items: p.items, totals: p.totals });
+      UI.modal = null; UI.pendingEntry = null; UI.screen = 'home';
+      UI.photoBase64 = null; UI.photoMime = null;
+      render();
+      showToast('Entry saved ✓');
+    }
+
+    if (a === 'cancel-confirm') { UI.modal = 'add'; UI.pendingEntry = null; render(); }
+
+    if (a === 'delete-entry') {
+      nutri_deleteEntry(el.dataset.date, el.dataset.id);
+      render();
+      showToast('Entry removed');
+    }
+
+    if (a === 'open-settings') {
+      const newKey = prompt('Update API key (leave blank to cancel):');
+      if (newKey && newKey.trim().startsWith('sk-')) {
+        S.apiKey = newKey.trim(); save(); showToast('API key updated');
+      }
+    }
+  });
+
+  // Camera file input
+  const cam = document.getElementById('camera-input');
+  if (cam) {
+    cam.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const [meta, b64] = ev.target.result.split(',');
+        UI.photoMime   = meta.match(/:(.*?);/)[1];
+        UI.photoBase64 = b64;
+        render();
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+}
+
+// ─────────────────────────────────────────
+// Toast
+// ─────────────────────────────────────────
+function showToast(msg) {
+  document.querySelector('.toast')?.remove();
+  const t = document.createElement('div');
+  t.className   = 'toast';
+  t.textContent = msg;
+  document.getElementById('app').appendChild(t);
+  setTimeout(() => t.remove(), 2700);
+}
+
+// ─────────────────────────────────────────
+// Boot
+// ─────────────────────────────────────────
+load();
+render();
+</script>
+</body>
+</html>
