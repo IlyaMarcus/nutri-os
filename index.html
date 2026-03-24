@@ -1,4 +1,4 @@
-<!-- NutriOS | Version: 0.3 | Updated: 2026-03-24 -->
+<!-- NutriOS | Version: 0.4 | Updated: 2026-03-24 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -810,9 +810,9 @@ function render() {
     ${rHeader()}
     <div class="content">${UI.screen === 'home' ? rHome() : rHistory()}</div>
     ${rNav()}
-    ${UI.modal === 'add'     ? rAddModal()     : ''}
-    ${UI.modal === 'confirm' ? rConfirmModal() : ''}
-    ${UI.loading             ? rLoading()      : ''}
+    ${UI.modal === 'add'     && !UI.loading ? rAddModal()     : ''}
+    ${UI.modal === 'confirm' && !UI.loading ? rConfirmModal() : ''}
+    ${UI.loading                           ? rLoading()      : ''}
   `;
   bindMain();
 }
