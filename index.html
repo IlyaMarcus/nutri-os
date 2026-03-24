@@ -1,4 +1,4 @@
-<!-- NutriOS | Version: 0.7 | Updated: 2026-03-24 -->
+<!-- NutriOS | Version: 0.8 | Updated: 2026-03-24 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -724,6 +724,26 @@ async function nutri_analyzeText(text) {
   return nutri_call([{ role:'user', content: prompt }]);
 }
 
+// Resize image to max 1024px using canvas — iPhone photos are 4000+ px and exceed API limits
+function nutri_resizeImage(dataUrl) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 1024;
+      let w = img.width, h = img.height;
+      if (w > h) { if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; } }
+      else        { if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; } }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      const resized = canvas.toDataURL('image/jpeg', 0.85);
+      const b64 = resized.split(',')[1];
+      resolve({ b64, mime: 'image/jpeg' });
+    };
+    img.src = dataUrl;
+  });
+}
+
 async function nutri_analyzeImage(b64, mime) {
   const prompt = `You are a nutrition expert skilled at estimating food portions from photos.\n1. Identify every food visible.\n2. Estimate weight in grams for each (use plate size, typical portions).\n3. Calculate nutritional values.\n${SCHEMA_PROMPT}`;
   return nutri_call([{
@@ -834,17 +854,12 @@ function nutri_startVoice() {
     render();
   };
 
-  // onend fires when recognition stops naturally or after stopVoice()
-  // If we captured speech but never got a isFinal result (common on iOS), analyze what we have
+  // onend fires when recognition stops (iOS cuts off after any pause — can't prevent this)
+  // Just update UI — user sees transcript and taps Analyze when ready, or re-taps mic to retry
   r.onend = () => {
     UI.voiceActive = false;
     UI.recognition = null;
-    if (lastTranscript && !didAnalyze) {
-      didAnalyze = true;
-      nutri_runAnalysis(() => nutri_analyzeText(lastTranscript), 'voice', lastTranscript);
-    } else if (!lastTranscript && !didAnalyze) {
-      render(); // nothing heard — just update UI
-    }
+    render();
   };
 
   r.start();
@@ -1123,10 +1138,11 @@ function bindMain() {
       const file = e.target.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = ev => {
-        const [meta, b64] = ev.target.result.split(',');
-        UI.photoMime   = meta.match(/:(.*?);/)[1];
+      reader.onload = async ev => {
+        // Resize before storing — iPhone originals can exceed API's 5MB limit
+        const { b64, mime } = await nutri_resizeImage(ev.target.result);
         UI.photoBase64 = b64;
+        UI.photoMime   = mime;
         render();
       };
       reader.readAsDataURL(file);
