@@ -1,4 +1,4 @@
-<!-- NutriOS | Version: 0.2 | Updated: 2026-03-24 -->
+<!-- NutriOS | Version: 0.3 | Updated: 2026-03-24 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -967,17 +967,18 @@ function rVoiceInput() {
   </div>`;
 }
 function rCameraInput() {
+  // Use <label for="camera-input"> instead of programmatic .click() — more reliable on iOS Safari
   return `<div class="camera-area">
-    <div class="camera-placeholder ${UI.photoBase64?'hidden':''}" data-action="trigger-camera">
+    <input type="file" id="camera-input" accept="image/*" style="display:none">
+    <label for="camera-input" class="camera-placeholder ${UI.photoBase64?'hidden':''}">
       <div class="camera-placeholder-icon">📷</div>
       <div>Tap to take or upload a photo</div>
-    </div>
+    </label>
     ${UI.photoBase64
       ? `<img class="photo-preview visible" src="data:${UI.photoMime};base64,${UI.photoBase64}">`
       : ''}
-    <input type="file" id="camera-input" accept="image/*" style="display:none">
     ${UI.photoBase64
-      ? `<button class="btn-secondary" data-action="trigger-camera">Change Photo</button>
+      ? `<label for="camera-input" class="btn-secondary" style="display:block;text-align:center;cursor:pointer">Change Photo</label>
          <button class="btn-primary mt-10" data-action="analyze-camera">Analyze Photo →</button>`
       : ''}
   </div>`;
@@ -1088,8 +1089,6 @@ function bindMain() {
       if (!t) { showToast('Nothing recorded yet'); return; }
       await nutri_runAnalysis(() => nutri_analyzeText(t), 'voice', t);
     }
-
-    if (a === 'trigger-camera') { document.getElementById('camera-input')?.click(); }
 
     if (a === 'analyze-camera') {
       if (!UI.photoBase64) { showToast('Select a photo first'); return; }
