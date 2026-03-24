@@ -1,4 +1,4 @@
-<!-- NutriOS | Version: 0.4 | Updated: 2026-03-24 -->
+<!-- NutriOS | Version: 0.5 | Updated: 2026-03-24 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,6 +7,10 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>NutriOS</title>
+  <!-- Prevent browser caching so updates load immediately -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
@@ -1036,6 +1040,12 @@ function rSetup() {
 // ─────────────────────────────────────────
 // Event binding
 // ─────────────────────────────────────────
+
+// Guard: click delegation on #app is added only once at boot.
+// Without this, every render() call stacks another listener,
+// causing repeated handler fires and the up-down-up-down jitter.
+let _mainListenerAdded = false;
+
 function bindSetup() {
   const btn   = document.getElementById('save-key-btn');
   const input = document.getElementById('api-key-input');
@@ -1050,6 +1060,27 @@ function bindSetup() {
 }
 
 function bindMain() {
+  // Camera input is re-created on every render — always re-bind its change handler
+  const cam = document.getElementById('camera-input');
+  if (cam) {
+    cam.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const [meta, b64] = ev.target.result.split(',');
+        UI.photoMime   = meta.match(/:(.*?);/)[1];
+        UI.photoBase64 = b64;
+        render();
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // Click delegation — only add once
+  if (_mainListenerAdded) return;
+  _mainListenerAdded = true;
+
   document.getElementById('app').addEventListener('click', async e => {
     const el = e.target.closest('[data-action]');
     if (!el) return;
@@ -1121,22 +1152,6 @@ function bindMain() {
     }
   });
 
-  // Camera file input
-  const cam = document.getElementById('camera-input');
-  if (cam) {
-    cam.addEventListener('change', e => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = ev => {
-        const [meta, b64] = ev.target.result.split(',');
-        UI.photoMime   = meta.match(/:(.*?);/)[1];
-        UI.photoBase64 = b64;
-        render();
-      };
-      reader.readAsDataURL(file);
-    });
-  }
 }
 
 // ─────────────────────────────────────────
