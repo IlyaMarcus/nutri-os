@@ -1,4 +1,4 @@
-<!-- NutriOS | Version: 0.6 | Updated: 2026-03-24 -->
+<!-- NutriOS | Version: 0.7 | Updated: 2026-03-24 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -609,7 +609,7 @@
 // NutriOS · Constants
 // ─────────────────────────────────────────
 const STORE_KEY = 'nutri_os_v1';
-const MODEL     = 'claude-opus-4-5';
+const MODEL     = 'claude-sonnet-4-20250514';
 const API_URL   = 'https://api.anthropic.com/v1/messages';
 
 // ─────────────────────────────────────────
@@ -742,7 +742,7 @@ async function nutri_call(messages) {
       'Content-Type':  'application/json',
       'x-api-key':     S.apiKey,
       'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-allow-browser': 'true'
+      'anthropic-dangerous-direct-browser-access': 'true'
     },
     body: JSON.stringify({ model: MODEL, max_tokens: 1024, messages })
   });
@@ -789,21 +789,69 @@ async function nutri_runAnalysis(apiFn, inputType, rawInput) {
 // Voice
 // ─────────────────────────────────────────
 function nutri_toggleVoice() {
+  if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+    showToast('Voice not supported — try Safari on iPhone');
+    return;
+  }
   UI.voiceActive ? nutri_stopVoice() : nutri_startVoice();
 }
 function nutri_startVoice() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { showToast('Voice not supported in this browser'); return; }
-  const r = new SR();
-  r.lang = 'en-US'; r.interimResults = false; r.maxAlternatives = 1;
-  r.onstart  = () => { UI.voiceActive = true;  UI.recognition = r; render(); };
-  r.onresult = e  => { UI.voiceTranscript = e.results[0][0].transcript; UI.voiceActive = false; UI.recognition = null; render(); };
-  r.onerror  = e  => { UI.voiceActive = false; UI.recognition = null; showToast('Voice error: ' + e.error); render(); };
-  r.onend    = ()  => { UI.voiceActive = false; UI.recognition = null; render(); };
+  const r  = new SR();
+  r.lang           = 'en-US';
+  r.interimResults = true;   // show live transcript as user speaks
+  r.continuous     = false;
+  let lastTranscript = '';
+  let didAnalyze     = false;
+
+  r.onstart = () => {
+    UI.voiceActive     = true;
+    UI.voiceTranscript = '';
+    UI.recognition     = r;
+    render();
+  };
+
+  r.onresult = e => {
+    // Build transcript from all results so far
+    let t = '';
+    for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
+    lastTranscript     = t;
+    UI.voiceTranscript = t;  // show live in UI
+    render();
+    // If this result is final, kick off analysis immediately
+    if (e.results[e.results.length - 1].isFinal && !didAnalyze) {
+      didAnalyze     = true;
+      UI.voiceActive = false;
+      UI.recognition = null;
+      nutri_runAnalysis(() => nutri_analyzeText(t), 'voice', t);
+    }
+  };
+
+  r.onerror = e => {
+    UI.voiceActive = false;
+    UI.recognition = null;
+    showToast('Voice error: ' + e.error);
+    render();
+  };
+
+  // onend fires when recognition stops naturally or after stopVoice()
+  // If we captured speech but never got a isFinal result (common on iOS), analyze what we have
+  r.onend = () => {
+    UI.voiceActive = false;
+    UI.recognition = null;
+    if (lastTranscript && !didAnalyze) {
+      didAnalyze = true;
+      nutri_runAnalysis(() => nutri_analyzeText(lastTranscript), 'voice', lastTranscript);
+    } else if (!lastTranscript && !didAnalyze) {
+      render(); // nothing heard — just update UI
+    }
+  };
+
   r.start();
 }
 function nutri_stopVoice() {
-  if (UI.recognition) { UI.recognition.stop(); UI.recognition = null; }
+  try { if (UI.recognition) UI.recognition.stop(); } catch(e) {}
+  UI.recognition = null;
   UI.voiceActive = false;
 }
 
