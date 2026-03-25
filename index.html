@@ -1,4 +1,4 @@
-<!-- NutriOS | Version: 0.9 | Updated: 2026-03-24 -->
+<!-- NutriOS | Version: 1.0 | Updated: 2026-03-25 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -636,8 +636,7 @@ let UI = {
   error:           null,
   voiceActive:     false,
   voiceTranscript: '',
-  photoBase64:     null,
-  photoMime:       null,
+  photoDataUrl:    null,   // raw dataUrl for preview (not sent to API)
   recognition:     null
 };
 
@@ -816,6 +815,18 @@ function nutri_toggleVoice() {
   }
   UI.voiceActive ? nutri_stopVoice() : nutri_startVoice();
 }
+
+// Direct DOM helpers — used instead of render() during active speech
+// so recognition is never interrupted by a full page rebuild
+function _vEl(id) { return document.getElementById(id); }
+function _vStatus(txt) { const el = _vEl('voice-status'); if (el) el.textContent = txt; }
+function _vTranscript(txt) {
+  const el = _vEl('voice-transcript');
+  if (!el) return;
+  if (txt) { el.textContent = '"' + txt + '"'; el.style.display = 'block'; }
+  else      { el.textContent = ''; el.style.display = 'none'; }
+}
+
 function nutri_startVoice() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   const r  = new SR();
@@ -826,20 +837,22 @@ function nutri_startVoice() {
   let didAnalyze     = false;
 
   r.onstart = () => {
-    UI.voiceActive     = true;
-    UI.voiceTranscript = '';
-    UI.recognition     = r;
-    render();
+    UI.voiceActive = true;
+    UI.recognition = r;
+    // Direct DOM — no render() during active speech
+    const btn = _vEl('voice-btn');
+    if (btn) btn.classList.add('recording');
+    _vStatus('Listening…');
+    _vTranscript('');
   };
 
   r.onresult = e => {
-    // Build transcript from all results so far
     let t = '';
     for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
     lastTranscript     = t;
-    UI.voiceTranscript = t;  // show live in UI
-    render();
-    // If this result is final, kick off analysis immediately
+    UI.voiceTranscript = t;
+    _vTranscript(t);   // live update — no render()
+    // Final result → auto-analyze immediately (same pattern as TrainingOS)
     if (e.results[e.results.length - 1].isFinal && !didAnalyze) {
       didAnalyze     = true;
       UI.voiceActive = false;
@@ -851,24 +864,35 @@ function nutri_startVoice() {
   r.onerror = e => {
     UI.voiceActive = false;
     UI.recognition = null;
-    showToast('Voice error: ' + e.error);
-    render();
+    const btn = _vEl('voice-btn');
+    if (btn) btn.classList.remove('recording');
+    _vStatus('Error: ' + e.error);
   };
 
-  // onend fires when recognition stops (iOS cuts off after any pause — can't prevent this)
-  // Just update UI — user sees transcript and taps Analyze when ready, or re-taps mic to retry
+  // onend: iOS often cuts recognition after a short pause — if we have a transcript
+  // but never got a clean isFinal, analyze whatever was captured (TrainingOS pattern)
   r.onend = () => {
     UI.voiceActive = false;
     UI.recognition = null;
-    render();
+    const btn = _vEl('voice-btn');
+    if (btn) btn.classList.remove('recording');
+    if (lastTranscript && !didAnalyze) {
+      didAnalyze = true;
+      nutri_runAnalysis(() => nutri_analyzeText(lastTranscript), 'voice', lastTranscript);
+    } else if (!lastTranscript) {
+      _vStatus('Tap mic to start');
+    }
   };
 
   r.start();
 }
+
 function nutri_stopVoice() {
   try { if (UI.recognition) UI.recognition.stop(); } catch(e) {}
   UI.recognition = null;
   UI.voiceActive = false;
+  const btn = _vEl('voice-btn');
+  if (btn) btn.classList.remove('recording');
 }
 
 // ─────────────────────────────────────────
@@ -1031,13 +1055,15 @@ function rTextInput() {
   <button class="btn-primary" data-action="analyze-text">Analyze →</button>`;
 }
 function rVoiceInput() {
+  // Stable IDs are required — voice callbacks update these elements directly
+  // without calling render(), so recognition is never interrupted
   const active = UI.voiceActive;
   const status = active ? 'Listening…' : (UI.voiceTranscript ? 'Tap to re-record' : 'Tap mic to start');
   return `<div class="voice-area">
-    <button class="voice-btn ${active?'recording':''}" data-action="toggle-voice">🎤</button>
-    <div class="voice-status">${status}</div>
+    <button class="voice-btn ${active?'recording':''}" id="voice-btn" data-action="toggle-voice">🎤</button>
+    <div class="voice-status" id="voice-status">${status}</div>
     ${UI.voiceTranscript
-      ? `<div class="voice-transcript">"${UI.voiceTranscript}"</div>
+      ? `<div class="voice-transcript" id="voice-transcript">"${UI.voiceTranscript}"</div>
          <button class="btn-primary mt-10" data-action="analyze-voice">Analyze →</button>`
       : ''}
   </div>`;
@@ -1046,14 +1072,14 @@ function rCameraInput() {
   // Use <label for="camera-input"> instead of programmatic .click() — more reliable on iOS Safari
   return `<div class="camera-area">
     <input type="file" id="camera-input" accept="image/*" style="display:none">
-    <label for="camera-input" class="camera-placeholder ${UI.photoBase64?'hidden':''}">
+    <label for="camera-input" class="camera-placeholder ${UI.photoDataUrl?'hidden':''}">
       <div class="camera-placeholder-icon">📷</div>
       <div>Tap to take or upload a photo</div>
     </label>
-    ${UI.photoBase64
-      ? `<img class="photo-preview visible" src="data:${UI.photoMime};base64,${UI.photoBase64}">`
+    ${UI.photoDataUrl
+      ? `<img class="photo-preview visible" src="${UI.photoDataUrl}">`
       : ''}
-    ${UI.photoBase64
+    ${UI.photoDataUrl
       ? `<label for="camera-input" class="btn-secondary" style="display:block;text-align:center;cursor:pointer">Change Photo</label>
          <button class="btn-primary mt-10" data-action="analyze-camera">Analyze Photo →</button>`
       : ''}
